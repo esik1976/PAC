@@ -1,4 +1,9 @@
 function createQoldauPilotForm() {
+  const spreadsheet = SpreadsheetApp.create(
+    "Qoldau Autism Care - заявки на пилот"
+  );
+  setupLeadsSheet_(spreadsheet);
+
   const form = FormApp.create("Qoldau Autism Care - заявка на пилот");
   form.setDescription(
     [
@@ -39,49 +44,18 @@ function createQoldauPilotForm() {
     .setRequired(true);
 
   form
-    .addMultipleChoiceItem()
-    .setTitle("Удобный канал связи")
-    .setChoiceValues(["WhatsApp", "Телефон", "Email"])
-    .setRequired(true);
-
-  form
-    .addMultipleChoiceItem()
-    .setTitle("Возрастная группа ребенка")
-    .setChoiceValues([
-      "До 3 лет",
-      "3-6 лет",
-      "7-10 лет",
-      "11 лет и старше",
-      "Не применимо, я специалист или центр",
-    ])
-    .setRequired(true);
-
-  form
-    .addCheckboxItem()
-    .setTitle("Какая помощь нужна?")
-    .setChoiceValues([
-      "Понять, куда обращаться первым шагом",
-      "Найти специалиста",
-      "Найти центр",
-      "Записаться на первичную консультацию",
-      "Получить рекомендации по дальнейшему маршруту",
-      "Я специалист или центр и хочу попасть в список проверенных контактов",
-    ])
-    .setRequired(true);
-
-  form
-    .addMultipleChoiceItem()
-    .setTitle("Предпочитаемый язык общения")
-    .setChoiceValues(["Русский", "Казахский", "Русский или казахский"])
-    .setRequired(true);
-
-  form
     .addParagraphTextItem()
-    .setTitle("Коротко опишите запрос без чувствительных данных")
+    .setTitle("Главная боль")
     .setHelpText(
-      "Не указывайте ИИН, ФИО ребенка, диагнозы, медицинские документы и подробную медицинскую историю."
+      "Коротко опишите, что сейчас нужно решить. Не указывайте ИИН, ФИО ребенка, диагнозы, медицинские документы и подробную медицинскую историю."
     )
-    .setRequired(false);
+    .setRequired(true);
+
+  form
+    .addMultipleChoiceItem()
+    .setTitle("Готов к интервью?")
+    .setChoiceValues(["Да", "Нет", "Можно написать в WhatsApp"])
+    .setRequired(true);
 
   form
     .addCheckboxItem()
@@ -91,27 +65,79 @@ function createQoldauPilotForm() {
     ])
     .setRequired(true);
 
-  const spreadsheet = SpreadsheetApp.create(
-    "Qoldau Autism Care - заявки на пилот"
-  );
   form.setDestination(
     FormApp.DestinationType.SPREADSHEET,
     spreadsheet.getId()
   );
-
-  const processingSheet = spreadsheet.insertSheet("Lead processing");
-  processingSheet.appendRow([
-    "Статус",
-    "Назначенный оператор",
-    "Кому предложили обратиться",
-    "Дата первого контакта",
-    "Дата консультации",
-    "Результат",
-    "Следующий шаг",
-    "Комментарий",
-  ]);
+  PropertiesService.getScriptProperties().setProperty(
+    "QOLDAU_LEADS_SPREADSHEET_ID",
+    spreadsheet.getId()
+  );
+  ScriptApp.newTrigger("handleQoldauPilotFormSubmit")
+    .forForm(form)
+    .onFormSubmit()
+    .create();
 
   Logger.log("Published form URL: " + form.getPublishedUrl());
   Logger.log("Edit form URL: " + form.getEditUrl());
   Logger.log("Responses spreadsheet URL: " + spreadsheet.getUrl());
+  Logger.log("Processing sheet name: Leads");
+}
+
+function handleQoldauPilotFormSubmit(event) {
+  const spreadsheetId = PropertiesService.getScriptProperties().getProperty(
+    "QOLDAU_LEADS_SPREADSHEET_ID"
+  );
+  const spreadsheet = SpreadsheetApp.openById(spreadsheetId);
+  const leadsSheet = setupLeadsSheet_(spreadsheet);
+  const values = getFormValues_(event.response);
+
+  leadsSheet.appendRow([
+    new Date(),
+    values["Кто вы?"] || "",
+    values["Город"] || "",
+    values["Контакт для связи"] || "",
+    values["Главная боль"] || "",
+    values["Готов к интервью?"] || "",
+    "Новая",
+    "",
+    "",
+  ]);
+}
+
+function setupLeadsSheet_(spreadsheet) {
+  const sheetName = "Leads";
+  const headers = [
+    "Дата",
+    "Роль",
+    "Город",
+    "Контакт",
+    "Главная боль",
+    "Готов к интервью",
+    "Статус",
+    "Следующее действие",
+    "Заметки оператора",
+  ];
+
+  const existingSheet = spreadsheet.getSheetByName(sheetName);
+  const sheet = existingSheet || spreadsheet.insertSheet(sheetName, 0);
+  const currentHeaders = sheet
+    .getRange(1, 1, 1, headers.length)
+    .getValues()[0];
+
+  if (currentHeaders.join("") === "") {
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    sheet.setFrozenRows(1);
+    sheet.autoResizeColumns(1, headers.length);
+  }
+
+  return sheet;
+}
+
+function getFormValues_(response) {
+  const values = {};
+  response.getItemResponses().forEach((itemResponse) => {
+    values[itemResponse.getItem().getTitle()] = itemResponse.getResponse();
+  });
+  return values;
 }
