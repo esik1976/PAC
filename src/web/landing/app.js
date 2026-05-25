@@ -1,35 +1,19 @@
-const form = document.querySelector("#pilotForm");
+const GOOGLE_FORM_URL = "";
+
+const formLink = document.querySelector("#googleFormLink");
 const statusNode = document.querySelector("#formStatus");
 
-function readLeads() {
-  try {
-    return JSON.parse(localStorage.getItem("qoldauPilotLeads") || "[]");
-  } catch {
-    return [];
+if (formLink) {
+  if (GOOGLE_FORM_URL) {
+    formLink.href = GOOGLE_FORM_URL;
+    formLink.target = "_blank";
+    statusNode.textContent = "Форма откроется в новой вкладке Google Forms.";
+  } else {
+    formLink.setAttribute("aria-disabled", "true");
+    formLink.addEventListener("click", (event) => {
+      event.preventDefault();
+      statusNode.textContent =
+        "Google Form еще не подключена. Создайте форму по спецификации и вставьте ссылку в GOOGLE_FORM_URL.";
+    });
   }
 }
-
-function saveLead(lead) {
-  const leads = readLeads();
-  leads.push(lead);
-  localStorage.setItem("qoldauPilotLeads", JSON.stringify(leads));
-  return leads.length;
-}
-
-form?.addEventListener("submit", (event) => {
-  event.preventDefault();
-
-  const data = new FormData(form);
-  const lead = {
-    role: data.get("role"),
-    city: data.get("city"),
-    contact: data.get("contact"),
-    need: data.get("need"),
-    createdAt: new Date().toISOString(),
-  };
-
-  const total = saveLead(lead);
-  form.reset();
-
-  statusNode.textContent = `Заявка сохранена для демо. Всего локальных заявок: ${total}.`;
-});
