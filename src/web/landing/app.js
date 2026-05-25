@@ -9,13 +9,13 @@ if (formLink) {
     formLink.href = GOOGLE_FORM_URL;
     formLink.target = "_blank";
     formLink.removeAttribute("aria-disabled");
-    statusNode.textContent = "Форма откроется в новой вкладке Google Forms.";
+    statusNode.textContent = "Заявка откроется в новой вкладке.";
   } else {
     formLink.setAttribute("aria-disabled", "true");
     formLink.addEventListener("click", (event) => {
       event.preventDefault();
       statusNode.textContent =
-        "Google Form еще не подключена. Создайте форму по спецификации и вставьте ссылку в GOOGLE_FORM_URL.";
+        "Форма заявки еще не подключена. Создайте форму по спецификации и вставьте ссылку в GOOGLE_FORM_URL.";
     });
   }
 }
