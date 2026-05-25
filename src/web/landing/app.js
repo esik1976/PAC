@@ -1,5 +1,5 @@
 const GOOGLE_FORM_URL =
-  "https://docs.google.com/forms/d/e/1FAIpQLSdDWEbOyZbOukt4S1VmcTDhZ-ip5DUeeJ5SVCStb8ogwAt0aA/viewform";
+  "https://docs.google.com/forms/d/e/1FAIpQLSfeIPOzwqfa3gmmqI_r2bGoBEc-j8CNiXp_iBNJLHJhQPp_kg/viewform";
 
 const formLink = document.querySelector("#googleFormLink");
 const statusNode = document.querySelector("#formStatus");
